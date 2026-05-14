@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>김지홍님 응원 페이지</title>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -328,7 +328,8 @@
       <p style="font-size:14px;color:rgba(255,255,255,0.55);line-height:1.7;margin-bottom:4px;">
         여러분의 응원으로 지홍님의 이마 스케일을<br>
         <strong style="color:rgba(255,255,255,0.85);">우주적 스케일</strong>로 넓힐 수 있습니다 🌌<br>
-        <span style="color:rgba(249,168,212,0.7);font-size:13px;">⚠️ 아무도 안 누르면 30분마다 10%씩 떨어져요!</span>
+        <span style="color:rgba(249,168,212,0.7);font-size:13px;">⚠️ 아무도 안 누르면 30분마다 10%씩 떨어져요!</span><br>
+        <span style="color:rgba(255,255,255,0.3);font-size:12px;">다른 사람의 클릭은 새로고침하면 반영됩니다</span>
       </p>
       <button class="cheer-btn" id="cheerBtn" onclick="doCheer(event)">💪 응원하기</button>
       <span class="cheer-count" id="cheerCount"></span>
@@ -534,12 +535,35 @@
     scheduleSave();
   }
 
+  // Supabase Realtime 구독
+  function subscribeRealtime() {
+    const ws = new WebSocket(
+      `wss://srtwzlyiccxtuiijcvbm.supabase.co/realtime/v1/websocket?apikey=${SUPA_KEY}&vsn=1.0.0`
+    );
+    ws.onopen = () => {
+      ws.send(JSON.stringify({ topic: 'realtime:public:jihong_cheers', event: 'phx_join', payload: {}, ref: '1' }));
+    };
+    ws.onmessage = (e) => {
+      const msg = JSON.parse(e.data);
+      if (msg.event === 'UPDATE' && msg.payload?.record) {
+        const incoming = msg.payload.record.count;
+        // 내가 클릭 중이면 무시 (낙관적 UI 보호)
+        if (pendingClicks === 0 && !isSaving) {
+          currentPct = Math.max(MIN, Math.min(MAX, incoming));
+          render();
+        }
+      }
+    };
+    ws.onclose = () => setTimeout(subscribeRealtime, 3000); // 끊기면 재연결
+  }
+
   // 초기 로드
   fill.style.transition = 'none';
   fill.style.width = '0';
   setTimeout(() => {
     fill.style.transition = 'width 1.2s cubic-bezier(0.16,1,0.3,1)';
     loadAndDecay();
+    subscribeRealtime();
   }, 100);
 </script>
 </body>
