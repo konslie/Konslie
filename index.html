@@ -112,8 +112,15 @@
       transition: width 0.6s cubic-bezier(0.16,1,0.3,1);
     }
     .meter-note {
-      font-size: 12px; color: rgba(255,255,255,0.35);
-      margin-top: 8px; text-align: right;
+      font-size: 13px; color: rgba(255,255,255,0.5);
+      margin-top: 10px; text-align: center;
+    }
+    .meter-pct {
+      font-size: 36px; font-weight: 900; letter-spacing: -1px;
+      background: linear-gradient(90deg, #fde68a, #f97316);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      background-clip: text;
+      display: block; line-height: 1; margin-top: 10px;
     }
 
     /* 응원 버튼 */
@@ -320,6 +327,7 @@
       <div class="meter-track">
         <div class="meter-fill" id="meterFill"></div>
       </div>
+      <span class="meter-pct" id="meterPct"></span>
       <div class="meter-note" id="meterNote"></div>
     </div>
 
@@ -432,6 +440,7 @@
 
   const fill = document.getElementById('meterFill');
   const note = document.getElementById('meterNote');
+  const pctEl = document.getElementById('meterPct');
   const btn  = document.getElementById('cheerBtn');
   const cnt  = document.getElementById('cheerCount');
 
@@ -482,31 +491,28 @@
     const adding = pendingClicks;
     pendingClicks = 0;
 
-    const pctToAdd = adding / CLICKS_PER_PCT; // 소수점 누적
-    const rows = await apiFetch('/rest/v1/jihong_cheers?id=eq.1');
-    if (rows && rows[0]) {
-      const newCount = Math.min(MAX, rows[0].count + pctToAdd);
-      await apiFetch('/rest/v1/jihong_cheers?id=eq.1', {
-        method: 'PATCH',
-        body: JSON.stringify({ count: newCount })
-      });
-      currentPct = Math.round(newCount);
-      render();
-    }
+    const pctToAdd = adding / CLICKS_PER_PCT;
+    // RPC로 원자적으로 더함 (DB 재읽기 없음 → 소수점 유지)
+    await apiFetch('/rest/v1/rpc/add_cheer', {
+      method: 'POST',
+      body: JSON.stringify({ amount: pctToAdd })
+    }).catch(() => {});
+
     isSaving = false;
-    if (pendingClicks > 0) flushClicks(); // 저장 중 들어온 클릭 처리
+    if (pendingClicks > 0) flushClicks();
   }
 
   function render() {
     const pct = Math.min(MAX, currentPct);
     const display = pct >= MAX ? '100.000' : pct.toFixed(3);
     fill.style.width = pct + '%';
+    pctEl.textContent = display + '%';
     if (pct >= MAX) {
-      note.textContent = '이마 스케일: 100.000% 🌌 우주 정복 완료!';
+      note.textContent = '🌌 우주 정복 완료!';
       btn.textContent = '🌌 우주 이마 달성!';
       btn.classList.add('maxed');
     } else {
-      note.textContent = `현재 지홍님 이마 스케일: ${display}% (성장 중)`;
+      note.textContent = '현재 지홍님의 이마 스케일';
       btn.textContent = '💪 응원하기';
       btn.classList.remove('maxed');
     }
