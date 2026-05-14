@@ -328,7 +328,7 @@
       <p style="font-size:14px;color:rgba(255,255,255,0.55);line-height:1.7;margin-bottom:4px;">
         여러분의 응원으로 지홍님의 이마 스케일을<br>
         <strong style="color:rgba(255,255,255,0.85);">우주적 스케일</strong>로 넓힐 수 있습니다 🌌<br>
-        <span style="color:rgba(249,168,212,0.7);font-size:13px;">⚠️ 아무도 안 누르면 10분마다 10%씩 떨어져요!</span>
+        <span style="color:rgba(249,168,212,0.7);font-size:13px;">⚠️ 아무도 안 누르면 30분마다 10%씩 떨어져요!</span>
       </p>
       <button class="cheer-btn" id="cheerBtn" onclick="doCheer(event)">💪 응원하기</button>
       <span class="cheer-count" id="cheerCount"></span>
@@ -426,7 +426,7 @@
 
   const MIN = 30, MAX = 100;
   const CLICKS_PER_PCT = 30;   // 클릭 30번 = +1%
-  const DECAY_PER_10MIN = 10;  // 10분마다 -10%
+  const DECAY_PER_10MIN = 10;  // 30분마다 -10%
   const popEmojis = ['💪','🔥','👑','⭐','🎉','✨','💫','🙌'];
 
   const fill = document.getElementById('meterFill');
@@ -453,7 +453,7 @@
     const { count, last_decay } = rows[0];
 
     const minutesPassed = (Date.now() - new Date(last_decay).getTime()) / 60000;
-    const decayPct = (minutesPassed / 10) * DECAY_PER_10MIN;
+    const decayPct = (minutesPassed / 30) * DECAY_PER_10MIN;
     const newPct = Math.max(MIN, Math.min(MAX, count - decayPct));
 
     if (decayPct > 0) {
